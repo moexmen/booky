@@ -30,24 +30,46 @@ defmodule Booky.AuthController do
     # Request the user's data with the access token
     user = get_user!(provider, client)
 
-    # Store the user in the session under `:current_user` and redirect to /.
-    # In most cases, we'd probably just store the user's ID that can be used
-    # to fetch from the database. In this case, since this example app has no
-    # database, I'm just storing the user map.
-    #
-    # If you need to make additional resource requests, you may want to store
-    # the access token as well.
-    conn
-    |> put_session(:current_user, user)
-    |> put_session(:access_token, client.token.access_token)
-    |> redirect(to: "/?success")
+    # Check if user belongs to the approved org
+    if belong_to_github_org(client) do
+      # Store the user in the session under `:current_user` and redirect to /.
+      # In most cases, we'd probably just store the user's ID that can be used
+      # to fetch from the database. In this case, since this example app has no
+      # database, I'm just storing the user map.
+      #
+      # If you need to make additional resource requests, you may want to store
+      # the access token as well.
+      conn
+      |> put_session(:current_user, user)
+      |> put_session(:access_token, client.token.access_token)
+      |> redirect(to: "/?success")
+    else
+      conn
+      |> put_flash(:error, "You do not belong to the organization.")
+      |> redirect(to: page_path(conn, :index))
+      |> halt()
+    end
   end
 
 
-  defp authorize_url!("github"), do: GitHub.authorize_url!
+  # Ask for permission to read the organizations of the user
+  # See https://developer.github.com/v3/oauth/#scopes
+  defp authorize_url!("github"), do: GitHub.authorize_url!(scope: "read:org")
   defp get_token!("github", code), do: GitHub.get_token!(code: code)
   defp get_user!("github", client) do
     %{body: user} = OAuth2.Client.get!(client, "/user")
     %{name: user["name"], avatar: user["avatar_url"], username: user["login"]}
+  end
+  defp belong_to_github_org(client) do
+    # Check if the user belongs to the organization
+    org_name = Application.get_env(:booky, GitHub)[:organization]
+    %{body: organizations} = OAuth2.Client.get!(client, "/user/memberships/orgs/#{org_name}")
+
+    case organizations do
+      # Belongs to the organization
+      %{"organization" => _} -> true
+      # This is what the GitHub API returns when it cannot find membership information
+      %{"documentation_url" => _, "message" => _} -> false
+    end
   end
 end
