@@ -15,6 +15,8 @@ defmodule Booky.AuthController do
     |> redirect(to: "/")
   end
 
+  alias Booky.User
+
   @doc """
   This action is reached via `/auth/:provider/callback` is the the callback URL that
   the OAuth2 provider will redirect the user back to with a `code` that will
@@ -32,6 +34,19 @@ defmodule Booky.AuthController do
 
     # Check if user belongs to the approved org
     if belong_to_github_org(client) do
+      # Check if user has already been added to the local database
+      flash_message =
+        unless db_user do
+          # First login, insert into the db
+          changeset = User.changeset(%User{}, %{username: user.username, name: user.name})
+          case Repo.insert(changeset) do
+            {:ok, _} ->
+              %{type: :info, message: "Welcome to Booky!"}
+            {:error, _} ->
+              %{type: :error, message: "You have not been added to the database."}
+          end
+        end
+
       # Store the user in the session under `:current_user` and redirect to /.
       # In most cases, we'd probably just store the user's ID that can be used
       # to fetch from the database. In this case, since this example app has no
@@ -40,6 +55,7 @@ defmodule Booky.AuthController do
       # If you need to make additional resource requests, you may want to store
       # the access token as well.
       conn
+      |> set_flash_message(flash_message)
       |> put_session(:current_user, user)
       |> put_session(:access_token, client.token.access_token)
       |> redirect(to: "/?success")
@@ -70,6 +86,13 @@ defmodule Booky.AuthController do
       %{"organization" => _} -> true
       # This is what the GitHub API returns when it cannot find membership information
       %{"documentation_url" => _, "message" => _} -> false
+    end
+  end
+  defp set_flash_message(conn, flash_message) do
+    if flash_message do
+      put_flash(conn, flash_message.type, flash_message.message)
+    else
+      conn
     end
   end
 end
