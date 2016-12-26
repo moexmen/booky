@@ -7,4 +7,10 @@ defmodule Booky.User do
 
     timestamps
   end
+
+  def changeset(model, params \\ :empty) do
+    model
+    |> cast(params, [:name, :username])
+    |> validate_required([:name, :username])
+  end
 end
