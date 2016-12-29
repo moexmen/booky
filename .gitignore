@@ -3,6 +3,9 @@
 /db
 /deps
 /*.ez
+#
+# Vim swap files
+*.swp
 
 # Generated on crash by the VM
 erl_crash.dump
