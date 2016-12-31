@@ -15,6 +15,8 @@ defmodule Booky.AuthController do
     |> redirect(to: "/")
   end
 
+  alias Booky.User
+
   @doc """
   This action is reached via `/auth/:provider/callback` is the the callback URL that
   the OAuth2 provider will redirect the user back to with a `code` that will
@@ -32,6 +34,26 @@ defmodule Booky.AuthController do
 
     # Check if user belongs to the approved org
     if belong_to_github_org(client) do
+      # Check if user has already been added to the local database
+      unless Repo.get_by(User, username: user.username) do
+        # First login, insert into the db
+        changeset = User.changeset(%User{}, %{username: user.username, name: user.name})
+        case Repo.insert(changeset) do
+          {:ok, _} ->
+            conn
+            |> put_flash(:info, "Welcome to Booky!")
+            |> put_session(:current_user, user)
+            |> put_session(:access_token, client.token.access_token)
+            |> redirect(to: "/?success")
+          {:error, _} ->
+            conn
+            |> put_flash(:error, "You have not been added to the database")
+            |> put_session(:current_user, user)
+            |> put_session(:access_token, client.token.access_token)
+            |> redirect(to: "/?success")
+        end
+      end
+
       # Store the user in the session under `:current_user` and redirect to /.
       # In most cases, we'd probably just store the user's ID that can be used
       # to fetch from the database. In this case, since this example app has no
