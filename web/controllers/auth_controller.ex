@@ -32,11 +32,20 @@ defmodule Booky.AuthController do
     # Request the user's data with the access token
     user = get_user!(provider, client)
 
+    db_user = Repo.get_by(User, username: user.username)
+
     # Check if user belongs to the approved org
     if belong_to_github_org(client) do
       # Check if user has already been added to the local database
       flash_message =
-        unless db_user do
+        if db_user do
+          # When user has been removed then re-added to the organization.
+          changeset = User.set_member_flag(db_user, %{current_member: true})
+          case Repo.update(changeset) do
+            {:ok, _} ->
+              %{type: :info, message: "Welcome back to Booky!"}
+          end
+        else
           # First login, insert into the db
           changeset = User.changeset(%User{}, %{username: user.username, name: user.name})
           case Repo.insert(changeset) do
@@ -60,6 +69,12 @@ defmodule Booky.AuthController do
       |> put_session(:access_token, client.token.access_token)
       |> redirect(to: "/?success")
     else
+      # Set current_member to false
+      if db_user do
+        changeset = User.set_member_flag(db_user, %{current_member: false})
+        Repo.update(changeset)
+      end
+
       conn
       |> put_flash(:error, "You do not belong to the organization.")
       |> redirect(to: page_path(conn, :index))
