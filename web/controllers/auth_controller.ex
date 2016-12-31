@@ -34,20 +34,24 @@ defmodule Booky.AuthController do
 
     db_user = Repo.get_by(User, username: user.username)
 
+    is_librarian = librarian?(client)
+
     # Check if user belongs to the approved org
     if belong_to_github_org(client) do
       # Check if user has already been added to the local database
       flash_message =
         if db_user do
           # When user has been removed then re-added to the organization.
-          changeset = User.set_member_flag(db_user, %{current_member: true})
+          changeset = User.set_attributes(db_user, %{current_member: true, librarian: is_librarian})
           case Repo.update(changeset) do
             {:ok, _} ->
               %{type: :info, message: "Welcome back to Booky!"}
           end
         else
           # First login, insert into the db
-          changeset = User.changeset(%User{}, %{username: user.username, name: user.name})
+          changeset = User.changeset(%User{}, %{username: user.username,
+                                                name: user.name,
+                                                librarian: is_librarian})
           case Repo.insert(changeset) do
             {:ok, _} ->
               %{type: :info, message: "Welcome to Booky!"}
@@ -69,9 +73,9 @@ defmodule Booky.AuthController do
       |> put_session(:access_token, client.token.access_token)
       |> redirect(to: "/?success")
     else
-      # Set current_member to false
+      # Set current_member and librarian to false
       if db_user do
-        changeset = User.set_member_flag(db_user, %{current_member: false})
+        changeset = User.set_attributes(db_user, %{current_member: false, librarian: false})
         Repo.update(changeset)
       end
 
@@ -109,5 +113,15 @@ defmodule Booky.AuthController do
     else
       conn
     end
+  end
+  # Check if user belongs to the librarian team of the organization
+  defp librarian?(client) do
+    org_name = Application.get_env(:booky, GitHub)[:organization]
+    team_name = Application.get_env(:booky, GitHub)[:librarian_team]
+    # Get all teams the user belongs to
+    %{body: teams} = OAuth2.Client.get!(client, "/user/teams")
+    # Extract team name and org login name
+    teams_and_orgs = Enum.map(teams, fn (x) -> { x["name"], x["organization"]["login"] } end)
+    Enum.member?(teams_and_orgs, {team_name, org_name})
   end
 end

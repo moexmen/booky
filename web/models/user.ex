@@ -12,13 +12,14 @@ defmodule Booky.User do
 
   def changeset(model, params \\ :empty) do
     model
-    |> cast(params, [:name, :username])
-    |> validate_required([:name, :username])
+    |> cast(params, [:name, :username, :librarian])
+    |> validate_required([:name, :username, :librarian])
   end
 
-  def set_member_flag(model, params \\ :empty) do
+  def set_attributes(model, params \\ :empty) do
     model
-    |> cast(params, [:current_member])
+    |> cast(params, [:current_member, :librarian])
     |> put_change(:current_member, params.current_member)
+    |> put_change(:librarian, params.librarian)
   end
 end
