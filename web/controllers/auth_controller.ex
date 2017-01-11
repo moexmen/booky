@@ -15,6 +15,8 @@ defmodule Booky.AuthController do
     |> redirect(to: "/")
   end
 
+  alias Booky.User
+
   @doc """
   This action is reached via `/auth/:provider/callback` is the the callback URL that
   the OAuth2 provider will redirect the user back to with a `code` that will
@@ -30,8 +32,34 @@ defmodule Booky.AuthController do
     # Request the user's data with the access token
     user = get_user!(provider, client)
 
+    db_user = Repo.get_by(User, username: user.username)
+
+    is_librarian = librarian?(client)
+
     # Check if user belongs to the approved org
     if belong_to_github_org(client) do
+      # Check if user has already been added to the local database
+      flash_message =
+        if db_user do
+          # When user has been removed then re-added to the organization.
+          changeset = User.set_attributes(db_user, %{current_member: true, librarian: is_librarian})
+          case Repo.update(changeset) do
+            {:ok, _} ->
+              %{type: :info, message: "Welcome back to Booky!"}
+          end
+        else
+          # First login, insert into the db
+          changeset = User.changeset(%User{}, %{username: user.username,
+                                                name: user.name,
+                                                librarian: is_librarian})
+          case Repo.insert(changeset) do
+            {:ok, _} ->
+              %{type: :info, message: "Welcome to Booky!"}
+            {:error, _} ->
+              %{type: :error, message: "You have not been added to the database."}
+          end
+        end
+
       # Store the user in the session under `:current_user` and redirect to /.
       # In most cases, we'd probably just store the user's ID that can be used
       # to fetch from the database. In this case, since this example app has no
@@ -40,10 +68,17 @@ defmodule Booky.AuthController do
       # If you need to make additional resource requests, you may want to store
       # the access token as well.
       conn
+      |> set_flash_message(flash_message)
       |> put_session(:current_user, user)
       |> put_session(:access_token, client.token.access_token)
       |> redirect(to: "/?success")
     else
+      # Set current_member and librarian to false
+      if db_user do
+        changeset = User.set_attributes(db_user, %{current_member: false, librarian: false})
+        Repo.update(changeset)
+      end
+
       conn
       |> put_flash(:error, "You do not belong to the organization.")
       |> redirect(to: page_path(conn, :index))
@@ -71,5 +106,22 @@ defmodule Booky.AuthController do
       # This is what the GitHub API returns when it cannot find membership information
       %{"documentation_url" => _, "message" => _} -> false
     end
+  end
+  defp set_flash_message(conn, flash_message) do
+    if flash_message do
+      put_flash(conn, flash_message.type, flash_message.message)
+    else
+      conn
+    end
+  end
+  # Check if user belongs to the librarian team of the organization
+  defp librarian?(client) do
+    org_name = Application.get_env(:booky, GitHub)[:organization]
+    team_name = Application.get_env(:booky, GitHub)[:librarian_team]
+    # Get all teams the user belongs to
+    %{body: teams} = OAuth2.Client.get!(client, "/user/teams")
+    # Extract team name and org login name
+    teams_and_orgs = Enum.map(teams, fn (x) -> { x["name"], x["organization"]["login"] } end)
+    Enum.member?(teams_and_orgs, {team_name, org_name})
   end
 end
