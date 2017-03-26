@@ -7,6 +7,7 @@ defmodule Booky.User do
     field :current_member, :boolean
     field :librarian, :boolean
 
+    has_many :books, Booky.Book
     timestamps
   end
 
