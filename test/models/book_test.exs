@@ -3,7 +3,7 @@ defmodule Booky.BookTest do
 
   alias Booky.Book
 
-  @valid_attrs %{author: "some content", description: "some content", remarks: "some content", status: "some content", title: "some content"}
+  @valid_attrs %{author: "some content", description: "some content", remarks: "some content", status: :available, title: "some content"}
   @invalid_attrs %{}
 
   test "changeset with valid attributes" do

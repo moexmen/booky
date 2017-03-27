@@ -4,11 +4,11 @@ defmodule Booky.Book do
   schema "books" do
     field :title, :string
     field :author, :string
-    field :status, :string
+    field :status, BookStatusEnum
     field :description, :string
     field :remarks, :string
 
-    belongs_to :borrower, Booky.User, foreign_key: :borrower_id 
+    belongs_to :borrower, Booky.User, foreign_key: :borrower_id
     timestamps()
   end
 
