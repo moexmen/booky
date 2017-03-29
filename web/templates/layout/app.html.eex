@@ -31,30 +31,15 @@
     <p class="alert alert-info" role="alert"><%= get_flash(@conn, :info) %></p>
     <p class="alert alert-danger" role="alert"><%= get_flash(@conn, :error) %></p>
     <div class="jumbotron">
-      <span class="logo"></span>
-      <h2>OAuth2/Phoenix Example Application!</h2>
-      <p class="lead">
-        This is an application to show an example of how to wire up
-        <a href="https://github.com/scrogson/oauth2">OAuth2</a> with
-        <a href="https://github.com/phoenixframework/phoenix">Phoenix</a>.
-      </p>
-
-      <br>
-      <br>
-
       <%= if @current_user do %>
         <h2>Welcome, <%= @current_user.name %>!</h2>
         <img src="<%= @current_user.avatar %>" class="img-circle"/>
         <%= link "Logout", to: auth_path(@conn, :delete), method: :delete, class: "btn btn-danger" %>
       <% else %>
-        <br>
-        <br>
-
         <a class="btn btn-primary btn-lg" href="<%= auth_path @conn, :index %>">
           <i class="fa fa-github"></i>
           Sign in with GitHub
         </a>
-
       <% end %>
     </div>
 
