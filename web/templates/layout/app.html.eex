@@ -30,19 +30,6 @@
     </div>
     <p class="alert alert-info" role="alert"><%= get_flash(@conn, :info) %></p>
     <p class="alert alert-danger" role="alert"><%= get_flash(@conn, :error) %></p>
-    <div class="jumbotron">
-      <%= if @current_user do %>
-        <h2>Welcome, <%= @current_user.name %>!</h2>
-        <img src="<%= @current_user.avatar %>" class="img-circle"/>
-        <%= link "Logout", to: auth_path(@conn, :delete), method: :delete, class: "btn btn-danger" %>
-      <% else %>
-        <a class="btn btn-primary btn-lg" href="<%= auth_path @conn, :index %>">
-          <i class="fa fa-github"></i>
-          Sign in with GitHub
-        </a>
-      <% end %>
-    </div>
-
     <main role="main">
       <%= render @view_module, @view_template, assigns %>
     </main>

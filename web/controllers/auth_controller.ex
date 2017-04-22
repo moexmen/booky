@@ -1,10 +1,18 @@
 defmodule Booky.AuthController do
   use Booky.Web, :controller
 
+  def index(conn, _params) do
+    if get_session(conn, :current_user) do
+      redirect conn, to: page_path(conn, :index)
+    else
+      render conn, "index.html"
+    end
+  end
+
   @doc """
   This action is reached via `/auth/` and redirects to GitHub
   """
-  def index(conn, _params) do
+  def create(conn, _params) do
     redirect conn, external: authorize_url!("github")
   end
 
