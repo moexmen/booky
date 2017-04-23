@@ -5,3 +5,8 @@
   align-content: center;
   flex-direction: column;
 }
+
+.navbar-avatar {
+  height: 30px;
+  width: 30px;
+}
