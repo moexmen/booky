@@ -1,0 +1,12 @@
+$icon-font-path: "/fonts/";
+@import "bootstrap";
+
+body, form, ul, table {
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+.alert:empty { display: none; }
+
+/* This file is for your main application css. */
+@import "header.scss";
+@import "auth_page.scss";
