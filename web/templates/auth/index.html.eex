@@ -1,0 +1,9 @@
+<div class="login-content">
+  <form class="login-form" method="post" action="<%= auth_path @conn, :index %>">
+    <input type="hidden" name="_csrf_token" value="<%= get_csrf_token %>">
+    <button class="btn btn-primary btn-lg" type="submit">
+      <i class="fa fa-github"></i>
+      Sign in with GitHub
+    </button>
+  </form>
+</div>

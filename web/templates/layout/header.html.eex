@@ -1,0 +1,20 @@
+<div class="navbar navbar-inverse navbar-static-top">
+  <div class="container">
+    <div class="navbar-header">
+      <a class="navbar-brand" href="/">Booky</a>
+    </div>
+    <%= if assigns[:current_user] do %>
+    <div class="navbar-right dropdown">
+      <div id="avatar-dropdown" class="btn btn-link dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+        <img src="<%= @current_user.avatar %>" class="img-circle navbar-avatar"/>
+        <%= @current_user.name %>
+        <span class="caret"></span>
+      </div>
+      <ul class="dropdown-menu" aria-labelledby="avatar-dropdown">
+        <li><%= button "Logout", to: auth_path(@conn, :delete), method: :delete, class: "btn btn-link" %></li>
+      </ul>
+    </div>
+    <% end %>
+
+  </div>
+</div>
