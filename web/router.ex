@@ -9,12 +9,17 @@ defmodule Booky.Router do
     plug :put_secure_browser_headers
   end
 
+  pipeline :authenticate do
+    plug :authenticate_user
+  end
+
   pipeline :api do
     plug :accepts, ["json"]
   end
 
   scope "/", Booky do
     pipe_through :browser # Use the default browser stack
+    pipe_through :authenticate
 
     get "/", PageController, :index
   end
@@ -27,6 +32,17 @@ defmodule Booky.Router do
     delete "/logout", AuthController, :delete
   end
 
+  defp authenticate_user(conn, _) do
+    current_user = get_session(conn, :current_user)
+    if current_user do
+      assign(conn, :current_user, current_user)
+    else
+      conn
+        |> put_flash(:error, 'You need to login to view Booky')
+        |> redirect(to: "/auth")
+        |> halt
+    end
+  end
   # Other scopes may use custom stacks.
   # scope "/api", Booky do
   #   pipe_through :api
